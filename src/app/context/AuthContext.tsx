@@ -12,6 +12,7 @@ interface AuthContextType {
   resendVerification: (email: string) => Promise<boolean>;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (password: string) => Promise<boolean>;
+  refreshProfile: () => Promise<void>;
   loading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -188,6 +189,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true;
   };
 
+  const refreshProfile = async () => {
+    await loadProfile();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -198,6 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resendVerification,
         forgotPassword,
         resetPassword,
+        refreshProfile,
         loading,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',

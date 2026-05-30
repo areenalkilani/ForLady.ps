@@ -173,6 +173,20 @@ export function RegisterPage() {
               </div>
             )}
 
+            <div>
+              <label className="block mb-2">القرية أو البلدة</label>
+              <input
+                type="text"
+                value={formData.town}
+                onChange={(e) =>
+                  setFormData({ ...formData, town: e.target.value })
+                }
+                required
+                className="w-full px-4 py-3 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary bg-input-background"
+                placeholder="اكتبي القرية أو البلدة"
+              />
+            </div>
+
             <button
               type="submit"
               disabled={loading}

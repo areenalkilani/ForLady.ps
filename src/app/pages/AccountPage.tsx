@@ -1,16 +1,53 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { fetchOrders } from '../lib/services';
+import { fetchOrders, updateProfile } from '../lib/services';
 import type { Order } from '../lib/types';
+import { palestinianCities } from '../lib/constants';
+import { toast } from 'sonner';
 
 export function AccountPage() {
-  const { user, isAuthenticated, logout, loading } = useAuth();
+  const { user, isAuthenticated, logout, loading, refreshProfile } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    phone: '',
+    region: '',
+    city: '',
+    town: '',
+  });
 
   useEffect(() => {
     if (isAuthenticated) fetchOrders(true).then(setOrders).catch(console.error);
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!user) return;
+    setFormData({
+      fullName: user.fullName || '',
+      phone: user.phone || '',
+      region: user.region || '',
+      city: user.city || '',
+      town: user.town || '',
+    });
+  }, [user]);
+
+  const handleSaveProfile = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!user) return;
+    setSaving(true);
+    try {
+      await updateProfile({ id: user.id, ...formData });
+      await refreshProfile();
+      toast.success('تم تحديث الملف الشخصي');
+    } catch (error: any) {
+      console.error('[Account] Profile update failed:', error);
+      toast.error(error.message || 'تعذر تحديث الملف الشخصي');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -21,21 +58,103 @@ export function AccountPage() {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  const regions = Object.keys(palestinianCities);
+  const cities = formData.region ? palestinianCities[formData.region] || [] : [];
 
   return (
     <div className="min-h-screen bg-muted/10 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8">حسابي</h1>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">حسابي</h1>
+            <p className="text-muted-foreground">إدارة معلوماتك وطلباتك</p>
+          </div>
+          <button
+            onClick={async () => {
+              await logout();
+            }}
+            className="rounded-lg border-2 border-destructive px-5 py-3 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            تسجيل الخروج
+          </button>
+        </div>
+
         <div className="grid gap-6">
-          <div className="bg-white rounded-2xl p-6">
-            <h2 className="text-xl font-semibold mb-4">المعلومات الشخصية</h2>
-            <div className="grid gap-3 text-sm">
-              <Info label="الاسم" value={user?.fullName} />
+          <div className="rounded-2xl bg-white p-6">
+            <h2 className="mb-4 text-xl font-semibold">الملف الشخصي</h2>
+            <div className="mb-6 grid gap-3 rounded-lg bg-muted/30 p-4 text-sm sm:grid-cols-2">
               <Info label="البريد الإلكتروني" value={user?.email} />
-              <Info label="رقم الهاتف" value={user?.phone} />
-              <Info label="المنطقة" value={user?.region} />
-              <Info label="المدينة" value={user?.city} />
+              <Info label="نوع الحساب" value={user?.role === 'admin' ? 'مسؤول' : 'زبون'} />
             </div>
+
+            <form onSubmit={handleSaveProfile} className="grid gap-4 sm:grid-cols-2">
+              <Field label="الاسم الكامل">
+                <input
+                  value={formData.fullName}
+                  onChange={(event) => setFormData({ ...formData, fullName: event.target.value })}
+                  required
+                  className="w-full rounded-lg border border-border bg-input-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </Field>
+
+              <Field label="رقم الهاتف">
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                  required
+                  className="w-full rounded-lg border border-border bg-input-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </Field>
+
+              <Field label="المنطقة">
+                <select
+                  value={formData.region}
+                  onChange={(event) => setFormData({ ...formData, region: event.target.value, city: '' })}
+                  required
+                  className="w-full rounded-lg border border-border bg-input-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">اختاري المنطقة</option>
+                  {regions.map((region) => (
+                    <option key={region} value={region}>{region}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="المدينة">
+                <select
+                  value={formData.city}
+                  onChange={(event) => setFormData({ ...formData, city: event.target.value })}
+                  required
+                  disabled={!formData.region}
+                  className="w-full rounded-lg border border-border bg-input-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60"
+                >
+                  <option value="">اختاري المدينة</option>
+                  {cities.map((city) => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="القرية أو البلدة">
+                <input
+                  value={formData.town}
+                  onChange={(event) => setFormData({ ...formData, town: event.target.value })}
+                  required
+                  placeholder="اكتبي القرية أو البلدة"
+                  className="w-full rounded-lg border border-border bg-input-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </Field>
+
+              <div className="flex items-end sm:col-span-2">
+                <button
+                  disabled={saving}
+                  className="w-full rounded-lg bg-primary px-5 py-3 text-primary-foreground hover:opacity-90 disabled:opacity-50 sm:w-auto"
+                >
+                  {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                </button>
+              </div>
+            </form>
           </div>
 
           <div className="bg-white rounded-2xl p-6">
@@ -74,8 +193,6 @@ export function AccountPage() {
               </div>
             )}
           </div>
-
-          <button onClick={logout} className="w-full py-3 border-2 border-destructive text-destructive rounded-lg hover:bg-destructive hover:text-destructive-foreground">تسجيل الخروج</button>
         </div>
       </div>
     </div>
@@ -84,6 +201,15 @@ export function AccountPage() {
 
 function Info({ label, value }: { label: string; value?: string }) {
   return <div><span className="text-muted-foreground">{label}:</span><span className="mr-2 font-medium">{value}</span></div>;
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block">{label}</span>
+      {children}
+    </label>
+  );
 }
 
 function getStatusLabel(status: string) {

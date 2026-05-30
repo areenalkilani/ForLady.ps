@@ -9,6 +9,7 @@ import type {
   Product,
   ProductColor,
   StoreSettings,
+  Profile,
 } from './types';
 
 const PRODUCT_BUCKET = 'product-media';
@@ -472,6 +473,32 @@ export async function markNotificationRead(id: string) {
   if (!isSupabaseConfigured) return;
   const { error } = await supabase.from('notifications').update({ read: true }).eq('id', id);
   if (error) throw error;
+}
+
+export async function updateProfile(profile: Pick<Profile, 'id' | 'fullName' | 'phone' | 'region' | 'city' | 'town'>) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      full_name: profile.fullName,
+      phone: profile.phone,
+      region: profile.region,
+      city: profile.city,
+      town: profile.town,
+    })
+    .eq('id', profile.id);
+  if (error) throw error;
+
+  const { error: authError } = await supabase.auth.updateUser({
+    data: {
+      full_name: profile.fullName,
+      phone: profile.phone,
+      region: profile.region,
+      city: profile.city,
+      town: profile.town,
+    },
+  });
+  if (authError) throw authError;
 }
 
 export async function savePushSubscription(subscription: PushSubscription) {
