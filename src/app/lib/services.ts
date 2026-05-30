@@ -346,29 +346,27 @@ export async function fetchDeliveryRegions() {
 }
 
 export async function fetchStoreSettings(): Promise<StoreSettings> {
+  const envSettings = {
+    whatsappUrl: import.meta.env.VITE_WHATSAPP_URL || '',
+    instagramUrl: import.meta.env.VITE_INSTAGRAM_URL || '',
+    facebookUrl: import.meta.env.VITE_FACEBOOK_URL || '',
+  };
+
   if (!isSupabaseConfigured) {
-    return {
-      whatsappUrl: import.meta.env.VITE_WHATSAPP_URL || '',
-      instagramUrl: import.meta.env.VITE_INSTAGRAM_URL || '',
-      facebookUrl: import.meta.env.VITE_FACEBOOK_URL || '',
-    };
+    return envSettings;
   }
 
   const { data, error } = await supabase.from('store_settings').select('key,value');
   if (error) {
     console.warn('[Settings] Could not load store_settings:', error.message);
-    return {
-      whatsappUrl: import.meta.env.VITE_WHATSAPP_URL || '',
-      instagramUrl: import.meta.env.VITE_INSTAGRAM_URL || '',
-      facebookUrl: import.meta.env.VITE_FACEBOOK_URL || '',
-    };
+    return envSettings;
   }
 
   const settings = Object.fromEntries((data || []).map((row: any) => [row.key, row.value || '']));
   return {
-    whatsappUrl: settings.whatsapp_url || '',
-    instagramUrl: settings.instagram_url || '',
-    facebookUrl: settings.facebook_url || '',
+    whatsappUrl: settings.whatsapp_url || envSettings.whatsappUrl,
+    instagramUrl: settings.instagram_url || envSettings.instagramUrl,
+    facebookUrl: settings.facebook_url || envSettings.facebookUrl,
   };
 }
 
@@ -464,6 +462,7 @@ export async function fetchNotifications() {
     title: row.title,
     body: row.body,
     type: row.type,
+    data: row.data || {},
     read: row.read,
     createdAt: row.created_at,
   }));

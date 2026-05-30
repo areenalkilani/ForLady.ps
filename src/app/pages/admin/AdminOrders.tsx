@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { Search, Eye, X } from 'lucide-react';
 import { fetchOrders, updateOrderStatus } from '../../lib/services';
 import type { Order, OrderStatus } from '../../lib/types';
@@ -6,6 +7,7 @@ import { orderStatuses } from '../../lib/constants';
 import { toast } from 'sonner';
 
 export function AdminOrders() {
+  const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -13,6 +15,13 @@ export function AdminOrders() {
 
   const loadOrders = () => fetchOrders().then(setOrders).catch(console.error);
   useEffect(() => { loadOrders(); }, []);
+
+  useEffect(() => {
+    const orderId = searchParams.get('order');
+    if (!orderId || orders.length === 0) return;
+    const order = orders.find((item) => item.id === orderId);
+    if (order) setSelectedOrder(order);
+  }, [orders, searchParams]);
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch = order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || order.id.toLowerCase().includes(searchQuery.toLowerCase()) || order.customerPhone.includes(searchQuery);

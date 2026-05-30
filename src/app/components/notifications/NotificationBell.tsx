@@ -1,25 +1,48 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Bell } from 'lucide-react';
 import { fetchNotifications, markNotificationRead } from '../../lib/services';
 import { supabase } from '../../../lib/supabaseClient';
 import type { NotificationItem } from '../../lib/types';
 
 export function NotificationBell() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const load = () => fetchNotifications().then(setItems).catch(console.error);
 
+  const playNotificationSound = () => {
+    audioRef.current?.play().catch(() => {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) return;
+      const context = new AudioContextClass();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, context.currentTime);
+      gain.gain.setValueAtTime(0.001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, context.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.35);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.35);
+    });
+  };
+
   useEffect(() => {
     load();
     audioRef.current = new Audio('/notification.mp3');
     const channel = supabase
       .channel('notification-center')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
         load();
-        if (Notification.permission === 'granted') new Notification('For Lady', { body: 'لديك إشعار جديد' });
-        audioRef.current?.play().catch(() => undefined);
+        const title = String(payload.new?.title || 'For Lady');
+        const body = String(payload.new?.body || 'لديك إشعار جديد');
+        if (Notification.permission === 'granted') new Notification(title, { body });
+        playNotificationSound();
       })
       .subscribe();
     return () => {
@@ -40,6 +63,21 @@ export function NotificationBell() {
     }
   };
 
+  const handleNotificationClick = async (item: NotificationItem) => {
+    await markNotificationRead(item.id).catch(console.error);
+    setOpen(false);
+    const orderId = item.data?.order_id;
+    if (orderId) {
+      navigate(`/admin/orders?order=${orderId}`);
+      return;
+    }
+    if (item.type === 'low_stock') {
+      navigate('/admin/products');
+      return;
+    }
+    navigate('/admin/orders');
+  };
+
   return (
     <div className="relative">
       <button onClick={handleOpen} className="relative p-2 hover:bg-muted rounded-lg transition-colors" aria-label="notifications">
@@ -52,11 +90,15 @@ export function NotificationBell() {
           {items.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground text-center">لا توجد إشعارات</p>
           ) : items.map((item) => (
-            <div key={item.id} className="p-4 border-b border-border last:border-0">
+            <button
+              key={item.id}
+              onClick={() => handleNotificationClick(item)}
+              className="block w-full p-4 text-right border-b border-border last:border-0 hover:bg-muted/50"
+            >
               <p className="font-medium text-sm">{item.title}</p>
               <p className="text-sm text-muted-foreground mt-1">{item.body}</p>
               <p className="text-xs text-muted-foreground mt-2">{new Date(item.createdAt).toLocaleString('ar')}</p>
-            </div>
+            </button>
           ))}
         </div>
       )}

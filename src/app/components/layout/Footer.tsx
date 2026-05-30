@@ -71,33 +71,32 @@ export function Footer() {
             <h4 className="font-semibold mb-4">تواصل معنا</h4>
             <div className="flex gap-4">
               <a
-                href={socialLinks.whatsappUrl || '#'}
+                href={socialLinks.whatsappUrl || undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
+                aria-disabled={!socialLinks.whatsappUrl}
+                className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity ${!socialLinks.whatsappUrl ? 'pointer-events-none opacity-50' : ''}`}
               >
                 <MessageCircle className="w-5 h-5" />
               </a>
               <a
-                href={socialLinks.instagramUrl || '#'}
+                href={socialLinks.instagramUrl || undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
+                aria-disabled={!socialLinks.instagramUrl}
+                className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity ${!socialLinks.instagramUrl ? 'pointer-events-none opacity-50' : ''}`}
               >
                 <Instagram className="w-5 h-5" />
               </a>
               <a
-                href={socialLinks.facebookUrl || '#'}
+                href={socialLinks.facebookUrl || undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity"
+                aria-disabled={!socialLinks.facebookUrl}
+                className={`w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity ${!socialLinks.facebookUrl ? 'pointer-events-none opacity-50' : ''}`}
               >
                 <Facebook className="w-5 h-5" />
               </a>
-            </div>
-            <div className="mt-4 text-sm text-muted-foreground">
-              <p>هاتف: 0599-123-456</p>
-              <p className="mt-1">البريد: info@forlady.ps</p>
             </div>
           </div>
         </div>

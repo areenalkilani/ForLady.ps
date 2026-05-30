@@ -121,6 +121,7 @@ export interface NotificationItem {
   title: string;
   body: string;
   type: string;
+  data?: Record<string, any>;
   read: boolean;
   createdAt: string;
 }

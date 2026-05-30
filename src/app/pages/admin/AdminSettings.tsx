@@ -31,7 +31,7 @@ export function AdminSettings() {
       await saveStoreSettings(socialLinks);
       toast.success('تم حفظ روابط التواصل');
     } catch (error: any) {
-      toast.error(error.message || 'تعذر حفظ روابط التواصل');
+      toast.error(error.message || 'تعذر حفظ روابط التواصل. تأكدي من تشغيل ملف store_settings في Supabase.');
     }
   };
 
