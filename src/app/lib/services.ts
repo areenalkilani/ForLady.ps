@@ -342,7 +342,27 @@ export async function fetchDeliveryRegions() {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase.from('delivery_fees').select('*').order('name');
   if (error) throw error;
-  return (data || []).map((row: any): DeliveryRegion => ({ id: row.id, name: row.name, price: Number(row.price) }));
+  const preferredOrder = ['الضفة الغربية', 'القدس', 'الداخل المحتل'];
+  const normalized = new Map<string, DeliveryRegion>();
+
+  for (const row of data || []) {
+    const name = normalizeDeliveryRegionName(row.name);
+    if (!preferredOrder.includes(name)) continue;
+    if (!normalized.has(name)) {
+      normalized.set(name, { id: row.id, name, price: Number(row.price) });
+    }
+  }
+
+  return preferredOrder
+    .map((name) => normalized.get(name))
+    .filter(Boolean) as DeliveryRegion[];
+}
+
+function normalizeDeliveryRegionName(name: string) {
+  const value = String(name || '').trim();
+  if (value === 'West Bank') return 'الضفة الغربية';
+  if (value === 'Jerusalem') return 'القدس';
+  return value;
 }
 
 export async function fetchStoreSettings(): Promise<StoreSettings> {

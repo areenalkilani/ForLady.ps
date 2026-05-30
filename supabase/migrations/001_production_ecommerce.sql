@@ -525,8 +525,8 @@ drop policy if exists "users manage own push subscriptions" on public.push_subsc
 create policy "users manage own push subscriptions" on public.push_subscriptions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 insert into public.delivery_fees (name, price) values
-  ('West Bank', 25),
-  ('Jerusalem', 30),
+  ('الضفة الغربية', 25),
+  ('القدس', 30),
   ('الداخل المحتل', 40)
 on conflict (name) do nothing;
 
