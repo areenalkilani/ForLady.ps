@@ -7,9 +7,9 @@ export function AdminHeader() {
   const { user } = useAuth();
 
   return (
-    <header className="h-16 bg-white border-b border-border flex items-center justify-between px-6">
+    <header className="min-h-16 bg-white border-b border-border flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
       {/* Search */}
-      <div className="flex-1 max-w-md">
+      <div className="w-full sm:flex-1 sm:max-w-md">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <input
@@ -21,17 +21,17 @@ export function AdminHeader() {
       </div>
 
       {/* User Info */}
-      <div className="flex items-center gap-4">
+      <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end sm:gap-4">
         <Link
           to="/"
           className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted transition-colors"
         >
           <Store className="w-4 h-4" />
-          <span>عرض المتجر</span>
+          <span className="hidden sm:inline">عرض المتجر</span>
         </Link>
         <NotificationBell />
-        <div className="flex items-center gap-3 pr-4 border-r border-border">
-          <div className="text-right">
+        <div className="flex items-center gap-3 pr-3 border-r border-border">
+          <div className="hidden text-right sm:block">
             <p className="font-medium">{user?.fullName}</p>
             <p className="text-xs text-muted-foreground">مسؤول</p>
           </div>

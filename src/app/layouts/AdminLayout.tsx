@@ -21,9 +21,9 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       <AdminSidebar />
-      <div className="mr-64">
+      <div className="lg:mr-64">
         <AdminHeader />
-        <main className="p-6">
+        <main className="p-4 sm:p-6 overflow-x-hidden">
           <Outlet />
         </main>
       </div>

@@ -23,9 +23,9 @@ export function AdminSidebar() {
   };
 
   return (
-    <aside className="fixed right-0 top-0 h-screen w-64 bg-white border-l border-border flex flex-col">
+    <aside className="lg:fixed lg:right-0 lg:top-0 lg:h-screen lg:w-64 bg-white border-l border-border flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-border">
+      <div className="p-4 lg:p-6 border-b border-border">
         <Link to="/admin" className="flex items-center gap-2">
           <div className="text-2xl font-bold text-primary">For Lady</div>
         </Link>
@@ -33,8 +33,8 @@ export function AdminSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <div className="space-y-1">
+      <nav className="flex-1 p-3 lg:p-4 overflow-x-auto">
+        <div className="flex gap-2 lg:block lg:space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path, item.exact);
@@ -42,7 +42,7 @@ export function AdminSidebar() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex shrink-0 items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                   active
                     ? 'bg-primary text-primary-foreground'
                     : 'text-foreground hover:bg-muted'
@@ -57,10 +57,10 @@ export function AdminSidebar() {
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-border space-y-2">
+      <div className="p-3 lg:p-4 border-t border-border flex gap-2 lg:block lg:space-y-2">
         <Link
           to="/"
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-foreground hover:bg-muted transition-colors"
+          className="flex shrink-0 items-center gap-3 px-4 py-3 lg:w-full rounded-lg text-foreground hover:bg-muted transition-colors"
         >
           <Store className="w-5 h-5" />
           <span>عرض المتجر</span>
@@ -70,7 +70,7 @@ export function AdminSidebar() {
             await logout();
             navigate('/', { replace: true });
           }}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-foreground hover:bg-muted transition-colors"
+          className="flex shrink-0 items-center gap-3 px-4 py-3 lg:w-full rounded-lg text-foreground hover:bg-muted transition-colors"
         >
           <LogOut className="w-5 h-5" />
           <span>تسجيل الخروج</span>
