@@ -1,0 +1,81 @@
+import { Link, useLocation, useNavigate } from 'react-router';
+import { LayoutDashboard, Package, ShoppingCart, FolderTree, Settings, LogOut, Store } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+
+export function AdminSidebar() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const menuItems = [
+    { path: '/admin', icon: LayoutDashboard, label: 'لوحة التحكم', exact: true },
+    { path: '/admin/products', icon: Package, label: 'المنتجات' },
+    { path: '/admin/orders', icon: ShoppingCart, label: 'الطلبات' },
+    { path: '/admin/categories', icon: FolderTree, label: 'التصنيفات' },
+    { path: '/admin/settings', icon: Settings, label: 'الإعدادات' },
+  ];
+
+  const isActive = (path: string, exact?: boolean) => {
+    if (exact) {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  return (
+    <aside className="fixed right-0 top-0 h-screen w-64 bg-white border-l border-border flex flex-col">
+      {/* Logo */}
+      <div className="p-6 border-b border-border">
+        <Link to="/admin" className="flex items-center gap-2">
+          <div className="text-2xl font-bold text-primary">For Lady</div>
+        </Link>
+        <p className="text-sm text-muted-foreground mt-1">لوحة التحكم</p>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4">
+        <div className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path, item.exact);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  active
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground hover:bg-muted'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* Logout */}
+      <div className="p-4 border-t border-border space-y-2">
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-foreground hover:bg-muted transition-colors"
+        >
+          <Store className="w-5 h-5" />
+          <span>عرض المتجر</span>
+        </Link>
+        <button
+          onClick={async () => {
+            await logout();
+            navigate('/', { replace: true });
+          }}
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-lg text-foreground hover:bg-muted transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          <span>تسجيل الخروج</span>
+        </button>
+      </div>
+    </aside>
+  );
+}
