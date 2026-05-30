@@ -165,7 +165,15 @@ export function Header() {
             >
               العروض
             </Link>
-            {!isAuthenticated && (
+            {isAuthenticated ? (
+              <Link
+                to={isAdmin ? '/admin' : '/account'}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-foreground hover:text-primary transition-colors"
+              >
+                {isAdmin ? 'لوحة التحكم' : 'حسابي'}
+              </Link>
+            ) : (
               <Link
                 to="/login"
                 onClick={() => setIsMobileMenuOpen(false)}
