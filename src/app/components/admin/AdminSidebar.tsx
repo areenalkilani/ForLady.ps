@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router';
-import { LayoutDashboard, Package, ShoppingCart, FolderTree, Settings, LogOut, Store } from 'lucide-react';
+import { FolderTree, Images, LayoutDashboard, LogOut, Package, Settings, ShoppingCart, Store } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export function AdminSidebar() {
@@ -12,6 +12,7 @@ export function AdminSidebar() {
     { path: '/admin/products', icon: Package, label: 'المنتجات' },
     { path: '/admin/orders', icon: ShoppingCart, label: 'الطلبات' },
     { path: '/admin/categories', icon: FolderTree, label: 'التصنيفات' },
+    { path: '/admin/banners', icon: Images, label: 'البنرات' },
     { path: '/admin/settings', icon: Settings, label: 'الإعدادات' },
   ];
 

@@ -290,6 +290,53 @@ export async function fetchBanners() {
   }));
 }
 
+export async function fetchAdminBanners() {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase.from('hero_banners').select('*').order('sort_order');
+  if (error) throw error;
+  return (data || []).map((row: any): HeroBanner => ({
+    id: row.id,
+    title: row.title,
+    subtitle: row.subtitle || '',
+    image: publicStorageUrl(BANNER_BUCKET, row.image_path),
+    order: row.sort_order,
+    visible: row.visible,
+  }));
+}
+
+export async function saveBanner(payload: Partial<HeroBanner>, file?: File) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
+  let imagePath = payload.image ? storagePathFromPublicUrl(BANNER_BUCKET, payload.image) : '';
+  if (file) imagePath = await uploadMedia(BANNER_BUCKET, file, 'banners');
+
+  const body = {
+    title: payload.title,
+    subtitle: payload.subtitle || '',
+    image_path: imagePath,
+    visible: payload.visible ?? true,
+    sort_order: payload.order ?? 999,
+  };
+  const request = payload.id
+    ? supabase.from('hero_banners').update(body).eq('id', payload.id).select().single()
+    : supabase.from('hero_banners').insert(body).select().single();
+  const { data, error } = await request;
+  if (error) throw error;
+  return {
+    id: data.id,
+    title: data.title,
+    subtitle: data.subtitle || '',
+    image: publicStorageUrl(BANNER_BUCKET, data.image_path),
+    order: data.sort_order,
+    visible: data.visible,
+  } as HeroBanner;
+}
+
+export async function deleteBanner(id: string) {
+  if (!isSupabaseConfigured) throw new Error('Supabase is not configured');
+  const { error } = await supabase.from('hero_banners').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function fetchDeliveryRegions() {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase.from('delivery_fees').select('*').order('name');

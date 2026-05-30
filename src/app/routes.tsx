@@ -18,6 +18,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminOrders } from './pages/admin/AdminOrders';
 import { AdminCategories } from './pages/admin/AdminCategories';
+import { AdminBanners } from './pages/admin/AdminBanners';
 import { AdminSettings } from './pages/admin/AdminSettings';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
       { path: 'products', Component: AdminProducts },
       { path: 'orders', Component: AdminOrders },
       { path: 'categories', Component: AdminCategories },
+      { path: 'banners', Component: AdminBanners },
       { path: 'settings', Component: AdminSettings },
     ],
   },
