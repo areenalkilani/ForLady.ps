@@ -41,6 +41,10 @@ export function CheckoutPage() {
       toast.error('الرجاء إدخال الهاتف والمنطقة والمدينة');
       return;
     }
+    if (!deliveryRegions.some((region) => region.name === formData.region)) {
+      toast.error('لا يوجد سعر توصيل لهذه المنطقة. راجعي أسعار التوصيل من لوحة التحكم.');
+      return;
+    }
     setLoading(true);
     try {
       await createOrder({

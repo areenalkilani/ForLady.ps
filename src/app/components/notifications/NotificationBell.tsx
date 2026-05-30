@@ -71,7 +71,7 @@ export function NotificationBell() {
       navigate(`/admin/orders?order=${orderId}`);
       return;
     }
-    if (item.type === 'low_stock') {
+    if (item.type === 'low_stock' || item.type === 'stock_out') {
       navigate('/admin/products');
       return;
     }

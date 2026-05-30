@@ -25,6 +25,7 @@ export function ProductPage() {
   const currentInventory = useMemo(() => currentColor?.sizes || [], [currentColor]);
   const selectedInventory = currentInventory.find((item) => item.size === selectedSize);
   const media = currentColor?.images?.length ? currentColor.images : product?.images || [];
+  const hasOffer = product ? Number(product.discount || 0) > 0 || Number(product.originalPrice || 0) > Number(product.price || 0) : false;
 
   if (loading) return <div className="container mx-auto px-4 py-16 text-center">جاري التحميل...</div>;
   if (!product) {
@@ -87,7 +88,7 @@ export function ProductPage() {
             <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
             <div className="flex items-center gap-3 mb-6">
               <span className="text-3xl font-bold text-primary">{product.price} ₪</span>
-              {!!product.discount && <><span className="text-xl text-muted-foreground line-through">{product.originalPrice} ₪</span><span className="px-2 py-1 bg-destructive text-destructive-foreground rounded text-sm font-semibold">-{product.discount}%</span></>}
+              {hasOffer && <><span className="text-xl text-muted-foreground line-through">{product.originalPrice} ₪</span><span className="px-2 py-1 bg-destructive text-destructive-foreground rounded text-sm font-semibold">{product.discount ? `-${product.discount}%` : 'عرض'}</span></>}
             </div>
             <p className="text-muted-foreground mb-6 leading-relaxed">{product.description}</p>
 

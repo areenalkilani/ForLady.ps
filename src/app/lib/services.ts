@@ -426,11 +426,21 @@ export async function createOrder(payload: {
   return data as string;
 }
 
-export async function fetchOrders(ownOnly = false) {
+export async function fetchOrders(ownOnly = false, adminView = false) {
   if (!isSupabaseConfigured) return [];
+  if (adminView) {
+    const { data, error } = await supabase.rpc('admin_orders_with_items');
+    if (!error && Array.isArray(data)) return data.map(mapOrder);
+    if (error) console.warn('[Orders] admin_orders_with_items failed, falling back to table query:', error.message);
+  }
+
   const user = (await supabase.auth.getUser()).data.user;
   let query = supabase.from('orders').select('*, order_items(*)').order('created_at', { ascending: false });
-  if (ownOnly && user?.email) query = query.eq('customer_email', user.email);
+  if (ownOnly && user) {
+    const conditions = [`user_id.eq.${user.id}`];
+    if (user.email) conditions.push(`customer_email.eq.${user.email}`);
+    query = query.or(conditions.join(','));
+  }
   const { data, error } = await query;
   if (error) throw error;
   return (data || []).map(mapOrder);

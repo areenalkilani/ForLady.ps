@@ -1,21 +1,33 @@
-﻿import { Link } from 'react-router';
+﻿import { Link, useNavigate } from 'react-router';
 import { LayoutDashboard, ShoppingBag, Search, User, Heart, Menu } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useEffect } from 'react';
 import { fetchCategories } from '../../lib/services';
 import type { Category } from '../../lib/types';
 
 export function Header() {
+  const navigate = useNavigate();
   const { cartCount, setIsCartOpen } = useCart();
   const { isAuthenticated, isAdmin } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     fetchCategories().then(setCategories).catch(console.error);
   }, []);
+
+  const handleSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+    setIsMobileMenuOpen(false);
+    setIsSearchOpen(false);
+    navigate(`/shop?q=${encodeURIComponent(query)}`);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border shadow-sm">
@@ -65,7 +77,7 @@ export function Header() {
               </div>
             </div>
             <Link
-              to="/shop"
+              to="/shop?offers=1"
               className="text-foreground hover:text-primary transition-colors"
             >
               العروض
@@ -84,9 +96,25 @@ export function Header() {
               </Link>
             )}
 
-            <button className="hidden md:block p-2 hover:text-primary transition-colors">
-              <Search className="w-5 h-5" />
-            </button>
+            <form onSubmit={handleSearch} className="hidden md:flex items-center gap-2">
+              {isSearchOpen && (
+                <input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  autoFocus
+                  placeholder="بحث..."
+                  className="w-44 rounded-lg border border-border bg-input-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              )}
+              <button
+                type={isSearchOpen ? 'submit' : 'button'}
+                onClick={() => !isSearchOpen && setIsSearchOpen(true)}
+                className="p-2 hover:text-primary transition-colors"
+                aria-label="بحث"
+              >
+                <Search className="w-5 h-5" />
+              </button>
+            </form>
 
             {isAuthenticated ? (
               <Link
@@ -159,12 +187,23 @@ export function Header() {
               </Link>
             ))}
             <Link
-              to="/shop"
+              to="/shop?offers=1"
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-foreground hover:text-primary transition-colors"
             >
               العروض
             </Link>
+            <form onSubmit={handleSearch} className="flex gap-2">
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="بحث..."
+                className="min-w-0 flex-1 rounded-lg border border-border bg-input-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button className="rounded-lg bg-primary px-4 py-2 text-primary-foreground">
+                بحث
+              </button>
+            </form>
             {isAuthenticated ? (
               <Link
                 to={isAdmin ? '/admin' : '/account'}
@@ -188,3 +227,4 @@ export function Header() {
     </header>
   );
 }
+

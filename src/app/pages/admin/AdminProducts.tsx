@@ -4,7 +4,7 @@ import { deleteProduct, fetchCategories, fetchProducts, saveProductWithInventory
 import type { Category, EditableProductColor, Product, ProductInventory } from '../../lib/types';
 import { toast } from 'sonner';
 
-type OfferMode = 'manual' | 'percentage';
+type OfferMode = 'none' | 'manual' | 'percentage';
 
 const defaultSizes = ['S', 'M', 'L', 'XL'];
 
@@ -175,7 +175,13 @@ function ProductModal({
   onClose: () => void;
   onSave: (data: Partial<Product>) => void;
 }) {
-  const [offerMode, setOfferMode] = useState<OfferMode>(product?.discount ? 'percentage' : 'manual');
+  const [offerMode, setOfferMode] = useState<OfferMode>(
+    product?.discount
+      ? 'percentage'
+      : Number(product?.originalPrice || 0) > Number(product?.price || 0)
+        ? 'manual'
+        : 'none'
+  );
   const [formData, setFormData] = useState<Partial<Product>>({
     name: product?.name || '',
     nameEn: product?.nameEn || '',
@@ -198,6 +204,9 @@ function ProductModal({
 
   const finalPrice = useMemo(() => {
     const original = Number(formData.originalPrice || 0);
+    if (offerMode === 'none') {
+      return original;
+    }
     if (offerMode === 'percentage') {
       return Math.max(0, Math.round(original * (1 - Number(formData.discount || 0) / 100)));
     }
@@ -234,7 +243,7 @@ function ProductModal({
       ...formData,
       price: finalPrice,
       discount: offerMode === 'percentage' ? Number(formData.discount || 0) : 0,
-      originalPrice: Number(formData.originalPrice || finalPrice),
+      originalPrice: offerMode === 'none' ? finalPrice : Number(formData.originalPrice || finalPrice),
       colors,
     });
   };
@@ -272,10 +281,13 @@ function ProductModal({
             <div className="grid md:grid-cols-4 gap-4">
               <input type="number" value={formData.originalPrice || 0} onChange={(e) => setFormData({ ...formData, originalPrice: Number(e.target.value) })} min="0" placeholder="السعر الأصلي" className="px-4 py-3 rounded-lg border border-border" />
               <select value={offerMode} onChange={(e) => setOfferMode(e.target.value as OfferMode)} className="px-4 py-3 rounded-lg border border-border">
+                <option value="none">بدون عرض</option>
                 <option value="manual">عرض يدوي</option>
                 <option value="percentage">عرض بنسبة مئوية</option>
               </select>
-              {offerMode === 'percentage' ? (
+              {offerMode === 'none' ? (
+                <div className="px-4 py-3 rounded-lg bg-white border border-border text-muted-foreground">لا يوجد خصم</div>
+              ) : offerMode === 'percentage' ? (
                 <input type="number" value={formData.discount || 0} onChange={(e) => setFormData({ ...formData, discount: Number(e.target.value) })} min="0" max="100" placeholder="نسبة الخصم" className="px-4 py-3 rounded-lg border border-border" />
               ) : (
                 <input type="number" value={formData.price || 0} onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })} min="0" placeholder="سعر العرض اليدوي" className="px-4 py-3 rounded-lg border border-border" />

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useSearchParams } from 'react-router';
 import { Filter, Star } from 'lucide-react';
 import { fetchCategories, fetchProducts } from '../lib/services';
 import type { Category, Product } from '../lib/types';
 
 export function ShopPage() {
   const { categoryId } = useParams();
+  const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState(categoryId || '');
   const [priceRange, setPriceRange] = useState([0, 1000]);
   const [showFilters, setShowFilters] = useState(false);
@@ -24,7 +25,12 @@ export function ShopPage() {
   }, []);
 
   const filteredProducts = products.filter((product) => {
+    const query = (searchParams.get('q') || '').trim().toLowerCase();
+    const offersOnly = searchParams.get('offers') === '1';
+    const hasOffer = Number(product.discount || 0) > 0 || Number(product.originalPrice || 0) > Number(product.price || 0);
     if (selectedCategory && product.category !== selectedCategory) return false;
+    if (offersOnly && !hasOffer) return false;
+    if (query && !`${product.name} ${product.nameEn || ''} ${product.description}`.toLowerCase().includes(query)) return false;
     return product.price >= priceRange[0] && product.price <= priceRange[1];
   });
 
@@ -50,7 +56,7 @@ export function ShopPage() {
     <div className="min-h-screen bg-muted/10">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">المتجر</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{searchParams.get('offers') === '1' ? 'العروض' : 'المتجر'}</h1>
           <p className="text-muted-foreground">{filteredProducts.length} منتج</p>
         </div>
         <div className="flex gap-8">
@@ -70,17 +76,18 @@ export function ShopPage() {
 }
 
 function ProductCard({ product }: { product: Product }) {
+  const hasOffer = Number(product.discount || 0) > 0 || Number(product.originalPrice || 0) > Number(product.price || 0);
   return (
     <Link to={`/product/${product.id}`} className="group">
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
         <div className="relative aspect-[3/4] overflow-hidden bg-muted">
           {product.images[0] && <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />}
-          {!!product.discount && <div className="absolute top-3 left-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-semibold">-{product.discount}%</div>}
+          {hasOffer && <div className="absolute top-3 left-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-semibold">عرض</div>}
           {product.bestseller && <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm"><Star className="w-4 h-4" /></div>}
         </div>
         <div className="p-4">
           <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
-          <div className="flex items-center gap-2"><span className="text-lg font-bold text-primary">{product.price} ₪</span>{!!product.discount && <span className="text-sm text-muted-foreground line-through">{product.originalPrice} ₪</span>}</div>
+          <div className="flex items-center gap-2"><span className="text-lg font-bold text-primary">{product.price} ₪</span>{hasOffer && <span className="text-sm text-muted-foreground line-through">{product.originalPrice} ₪</span>}</div>
         </div>
       </div>
     </Link>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { Search, Eye, X } from 'lucide-react';
+import { Search, Eye, Printer, X } from 'lucide-react';
 import { fetchOrders, updateOrderStatus } from '../../lib/services';
 import type { Order, OrderStatus } from '../../lib/types';
 import { orderStatuses } from '../../lib/constants';
@@ -13,7 +13,10 @@ export function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const loadOrders = () => fetchOrders().then(setOrders).catch(console.error);
+  const loadOrders = () => fetchOrders(false, true).then(setOrders).catch((error) => {
+    console.error('[AdminOrders] Load failed:', error);
+    toast.error(error.message || 'تعذر تحميل الطلبات');
+  });
   useEffect(() => { loadOrders(); }, []);
 
   useEffect(() => {
@@ -73,16 +76,152 @@ export function AdminOrders() {
 function OrderDetailsModal({ order, onClose }: { order: Order; onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-border p-6 flex justify-between"><div><h2 className="text-2xl font-bold">تفاصيل الطلب</h2><p className="text-muted-foreground">#{order.id}</p></div><button onClick={onClose}><X className="w-5 h-5" /></button></div>
+      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-border p-6 flex justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">فاتورة الطلب</h2>
+            <p className="text-muted-foreground">#{order.id}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => printOrderInvoice(order)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
+            >
+              <Printer className="w-4 h-4" />
+              طباعة
+            </button>
+            <button onClick={onClose} className="rounded-lg p-2 hover:bg-muted"><X className="w-5 h-5" /></button>
+          </div>
+        </div>
         <div className="p-6 space-y-6">
-          <section className="bg-muted/30 rounded-lg p-4 space-y-2 text-sm"><p><b>الاسم:</b> {order.customerName}</p><p><b>الهاتف:</b> {order.customerPhone}</p><p><b>البريد:</b> {order.customerEmail || 'غير متوفر'}</p><p><b>العنوان:</b> {order.region} / {order.city} / {order.village} - {order.address}</p></section>
-          <section className="space-y-3">{order.products.map((product, index) => <div key={index} className="flex gap-4 p-4 bg-muted/30 rounded-lg"><img src={product.productImage} alt={product.productName} className="w-20 h-20 object-cover rounded-lg" /><div className="flex-1"><h4 className="font-medium">{product.productName}</h4><p className="text-sm text-muted-foreground">{product.color} - {product.size}</p><p className="text-sm">الكمية: {product.quantity}</p></div><p className="font-semibold text-primary">{product.price * product.quantity} ₪</p></div>)}</section>
-          <section className="bg-muted/30 rounded-lg p-4 text-sm space-y-2"><div className="flex justify-between"><span>المجموع الفرعي:</span><span>{order.subtotal} ₪</span></div><div className="flex justify-between"><span>التوصيل:</span><span>{order.deliveryFee} ₪</span></div><div className="flex justify-between pt-2 border-t border-border"><b>المجموع:</b><b className="text-primary">{order.total} ₪</b></div></section>
+          <section className="grid gap-4 md:grid-cols-2">
+            <div className="bg-muted/30 rounded-lg p-4 space-y-2 text-sm">
+              <h3 className="font-semibold text-base">معلومات الزبون</h3>
+              <p><b>الاسم:</b> {order.customerName}</p>
+              <p><b>الهاتف:</b> {order.customerPhone}</p>
+              <p><b>البريد:</b> {order.customerEmail || 'غير متوفر'}</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-4 space-y-2 text-sm">
+              <h3 className="font-semibold text-base">معلومات التوصيل</h3>
+              <p><b>المنطقة:</b> {order.region}</p>
+              <p><b>المدينة:</b> {order.city}</p>
+              <p><b>البلدة/القرية:</b> {order.village || 'غير محدد'}</p>
+              <p><b>العنوان:</b> {order.address}</p>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="font-semibold">المنتجات</h3>
+            {order.products.length === 0 ? (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                لم تظهر تفاصيل المنتجات. شغلي ملف SQL الخاص بإصلاح صلاحيات الطلبات ثم جربي فتح الطلب مرة ثانية.
+              </div>
+            ) : order.products.map((product, index) => (
+              <div key={index} className="flex gap-4 p-4 bg-muted/30 rounded-lg">
+                <img src={product.productImage} alt={product.productName} className="w-20 h-20 object-cover rounded-lg" />
+                <div className="flex-1">
+                  <h4 className="font-medium">{product.productName}</h4>
+                  <p className="text-sm text-muted-foreground">اللون: {product.color}</p>
+                  <p className="text-sm text-muted-foreground">المقاس: {product.size}</p>
+                  <p className="text-sm">الكمية: {product.quantity}</p>
+                </div>
+                <div className="text-left">
+                  <p className="text-sm text-muted-foreground">{product.price} ₪ للقطعة</p>
+                  <p className="font-semibold text-primary">{product.price * product.quantity} ₪</p>
+                </div>
+              </div>
+            ))}
+          </section>
+
+          <section className="bg-muted/30 rounded-lg p-4 text-sm space-y-2">
+            <div className="flex justify-between"><span>المجموع الفرعي:</span><span>{order.subtotal} ₪</span></div>
+            <div className="flex justify-between"><span>التوصيل:</span><span>{order.deliveryFee} ₪</span></div>
+            <div className="flex justify-between pt-2 border-t border-border text-lg"><b>المجموع النهائي:</b><b className="text-primary">{order.total} ₪</b></div>
+          </section>
         </div>
       </div>
     </div>
   );
+}
+
+function printOrderInvoice(order: Order) {
+  const rows = order.products.map((product) => `
+    <tr>
+      <td>${product.productName}</td>
+      <td>${product.color}</td>
+      <td>${product.size}</td>
+      <td>${product.quantity}</td>
+      <td>${product.price} ₪</td>
+      <td>${product.price * product.quantity} ₪</td>
+    </tr>
+  `).join('');
+
+  const printWindow = window.open('', '_blank', 'width=900,height=700');
+  if (!printWindow) return;
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="utf-8" />
+        <title>فاتورة طلب ${order.id}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 32px; color: #111; }
+          h1, h2, h3 { margin: 0 0 12px; }
+          .header { display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; padding-bottom: 16px; margin-bottom: 24px; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+          .box { border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: right; }
+          th { background: #f5f5f5; }
+          .totals { width: 320px; margin-right: auto; border: 1px solid #ddd; border-radius: 8px; padding: 16px; }
+          .line { display: flex; justify-content: space-between; margin: 8px 0; }
+          .total { border-top: 1px solid #ddd; padding-top: 10px; font-weight: bold; font-size: 18px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1>For Lady</h1>
+            <p>فاتورة طلب</p>
+          </div>
+          <div>
+            <p><b>رقم الطلب:</b> ${order.id}</p>
+            <p><b>التاريخ:</b> ${new Date(order.createdAt).toLocaleString('ar')}</p>
+            <p><b>الحالة:</b> ${getStatusLabel(order.status)}</p>
+          </div>
+        </div>
+        <div class="grid">
+          <div class="box">
+            <h3>معلومات الزبون</h3>
+            <p><b>الاسم:</b> ${order.customerName}</p>
+            <p><b>الهاتف:</b> ${order.customerPhone}</p>
+            <p><b>البريد:</b> ${order.customerEmail || 'غير متوفر'}</p>
+          </div>
+          <div class="box">
+            <h3>معلومات التوصيل</h3>
+            <p><b>المنطقة:</b> ${order.region}</p>
+            <p><b>المدينة:</b> ${order.city}</p>
+            <p><b>البلدة/القرية:</b> ${order.village || 'غير محدد'}</p>
+            <p><b>العنوان:</b> ${order.address}</p>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>المنتج</th><th>اللون</th><th>النمرة</th><th>العدد</th><th>سعر القطعة</th><th>المجموع</th></tr>
+          </thead>
+          <tbody>${rows || '<tr><td colspan="6">لا توجد منتجات</td></tr>'}</tbody>
+        </table>
+        <div class="totals">
+          <div class="line"><span>المجموع الفرعي</span><span>${order.subtotal} ₪</span></div>
+          <div class="line"><span>التوصيل</span><span>${order.deliveryFee} ₪</span></div>
+          <div class="line total"><span>المجموع النهائي</span><span>${order.total} ₪</span></div>
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
 }
 
 function getStatusLabel(status: string) {
