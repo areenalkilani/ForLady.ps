@@ -77,11 +77,17 @@ export function ShopPage() {
 
 function ProductCard({ product }: { product: Product }) {
   const hasOffer = Number(product.discount || 0) > 0 || Number(product.originalPrice || 0) > Number(product.price || 0);
+  const coverImage = product.images[0];
+  const coverVideo = product.videos?.[0];
   return (
     <Link to={`/product/${product.id}`} className="group">
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
         <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-          {product.images[0] && <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />}
+          {coverImage ? (
+            <img src={coverImage} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+          ) : coverVideo ? (
+            <video src={coverVideo} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" muted playsInline />
+          ) : null}
           {hasOffer && <div className="absolute top-3 left-3 bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-sm font-semibold">عرض</div>}
           {product.bestseller && <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm"><Star className="w-4 h-4" /></div>}
         </div>

@@ -6,6 +6,11 @@ import type { Product } from '../lib/types';
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
 
+type ProductMediaItem = {
+  type: 'image' | 'video';
+  src: string;
+};
+
 export function ProductPage() {
   const { productId } = useParams();
   const { addToCart } = useCart();
@@ -24,7 +29,18 @@ export function ProductPage() {
   const currentColor = product?.colors[selectedColor];
   const currentInventory = useMemo(() => currentColor?.sizes || [], [currentColor]);
   const selectedInventory = currentInventory.find((item) => item.size === selectedSize);
-  const media = currentColor?.images?.length ? currentColor.images : product?.images || [];
+  const media: ProductMediaItem[] = useMemo(() => {
+    const colorMedia = [
+      ...(currentColor?.images || []).map((src) => ({ type: 'image' as const, src })),
+      ...(currentColor?.videos || []).map((src) => ({ type: 'video' as const, src })),
+    ];
+    if (colorMedia.length) return colorMedia;
+
+    return [
+      ...(product?.images || []).map((src) => ({ type: 'image' as const, src })),
+      ...(product?.videos || []).map((src) => ({ type: 'video' as const, src })),
+    ];
+  }, [currentColor, product]);
   const hasOffer = product ? Number(product.discount || 0) > 0 || Number(product.originalPrice || 0) > Number(product.price || 0) : false;
 
   if (loading) return <div className="container mx-auto px-4 py-16 text-center">جاري التحميل...</div>;
@@ -50,7 +66,7 @@ export function ProductPage() {
     addToCart({
       productId: product.id,
       productName: product.name,
-      productImage: media[0] || '',
+      productImage: media[0]?.src || '',
       price: product.price,
       size: selectedSize,
       color: currentColor.name,
@@ -72,12 +88,20 @@ export function ProductPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           <div>
             <div className="bg-white rounded-2xl overflow-hidden mb-4">
-              {media[selectedImage] && <img src={media[selectedImage]} alt={product.name} className="w-full aspect-[3/4] object-cover" />}
+              {media[selectedImage]?.type === 'video' ? (
+                <video src={media[selectedImage].src} className="w-full aspect-[3/4] object-cover" controls playsInline />
+              ) : media[selectedImage] ? (
+                <img src={media[selectedImage].src} alt={product.name} className="w-full aspect-[3/4] object-cover" />
+              ) : null}
             </div>
             <div className="grid grid-cols-4 gap-3">
-              {media.map((img, index) => (
-                <button key={img} onClick={() => setSelectedImage(index)} className={`rounded-lg overflow-hidden border-2 ${selectedImage === index ? 'border-primary' : 'border-transparent'}`}>
-                  <img src={img} alt={`${product.name} ${index + 1}`} className="w-full aspect-square object-cover" />
+              {media.map((item, index) => (
+                <button key={`${item.type}-${item.src}`} onClick={() => setSelectedImage(index)} className={`rounded-lg overflow-hidden border-2 ${selectedImage === index ? 'border-primary' : 'border-transparent'}`}>
+                  {item.type === 'video' ? (
+                    <video src={item.src} className="w-full aspect-square object-cover" muted playsInline />
+                  ) : (
+                    <img src={item.src} alt={`${product.name} ${index + 1}`} className="w-full aspect-square object-cover" />
+                  )}
                 </button>
               ))}
             </div>

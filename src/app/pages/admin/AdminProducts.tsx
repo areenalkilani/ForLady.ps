@@ -107,7 +107,11 @@ export function AdminProducts() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden">
-                        {product.images[0] && <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />}
+                        {product.images[0] ? (
+                          <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                        ) : product.videos?.[0] ? (
+                          <video src={product.videos[0]} className="w-full h-full object-cover" muted playsInline />
+                        ) : null}
                       </div>
                       <div>
                         <p className="font-medium">{product.name}</p>
@@ -173,8 +177,9 @@ function ProductModal({
   product: Product | null;
   categories: Category[];
   onClose: () => void;
-  onSave: (data: Partial<Product>) => void;
+  onSave: (data: Partial<Product>) => void | Promise<void>;
 }) {
+  const [isSaving, setIsSaving] = useState(false);
   const [offerMode, setOfferMode] = useState<OfferMode>(
     product?.discount
       ? 'percentage'
@@ -228,8 +233,9 @@ function ProductModal({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     if (colors.some((color) => !color.name.trim())) {
       toast.error('أدخلي اسم كل لون');
       return;
@@ -239,18 +245,23 @@ function ProductModal({
       return;
     }
 
-    onSave({
-      ...formData,
-      price: finalPrice,
-      discount: offerMode === 'percentage' ? Number(formData.discount || 0) : 0,
-      originalPrice: offerMode === 'none' ? finalPrice : Number(formData.originalPrice || finalPrice),
-      colors,
-    });
+    setIsSaving(true);
+    try {
+      await onSave({
+        ...formData,
+        price: finalPrice,
+        discount: offerMode === 'percentage' ? Number(formData.discount || 0) : 0,
+        originalPrice: offerMode === 'none' ? finalPrice : Number(formData.originalPrice || finalPrice),
+        colors,
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto p-3 sm:p-4">
+      <div className="bg-white rounded-2xl w-full max-w-5xl min-h-fit sm:max-h-[92vh] overflow-y-visible sm:overflow-y-auto mx-auto my-3 sm:my-6">
         <div className="sticky top-0 bg-white border-b border-border p-6 flex justify-between z-10">
           <h2 className="text-2xl font-bold">{product ? 'تعديل المنتج' : 'إضافة منتج جديد'}</h2>
           <button onClick={onClose} type="button">
@@ -326,6 +337,7 @@ function ProductModal({
                           updateColor(colorIndex, {
                             imageFiles: [...(color.imageFiles || []), ...files],
                           });
+                          e.currentTarget.value = '';
                         }}
                       />
                     </label>
@@ -342,6 +354,7 @@ function ProductModal({
                           updateColor(colorIndex, {
                             videoFiles: [...(color.videoFiles || []), ...files],
                           });
+                          e.currentTarget.value = '';
                         }}
                       />
                     </label>
@@ -349,6 +362,21 @@ function ProductModal({
                   <p className="mt-2 text-xs text-muted-foreground">
                     الصور الجديدة: {color.imageFiles?.length || 0}، الفيديوهات الجديدة: {color.videoFiles?.length || 0}
                   </p>
+                  <MediaPreviewGrid
+                    color={color}
+                    onRemoveExistingImage={(imageIndex) => updateColor(colorIndex, {
+                      images: (color.images || []).filter((_, index) => index !== imageIndex),
+                    })}
+                    onRemoveExistingVideo={(videoIndex) => updateColor(colorIndex, {
+                      videos: (color.videos || []).filter((_, index) => index !== videoIndex),
+                    })}
+                    onRemoveNewImage={(imageIndex) => updateColor(colorIndex, {
+                      imageFiles: (color.imageFiles || []).filter((_, index) => index !== imageIndex),
+                    })}
+                    onRemoveNewVideo={(videoIndex) => updateColor(colorIndex, {
+                      videoFiles: (color.videoFiles || []).filter((_, index) => index !== videoIndex),
+                    })}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -376,10 +404,120 @@ function ProductModal({
           </div>
 
           <div className="flex gap-3 pt-6 border-t border-border">
-            <button type="submit" className="flex-1 py-3 bg-primary text-primary-foreground rounded-lg">{product ? 'حفظ التعديلات' : 'إضافة المنتج'}</button>
-            <button type="button" onClick={onClose} className="px-6 py-3 border border-border rounded-lg">إلغاء</button>
+            <button type="submit" disabled={isSaving} className="flex-1 py-3 bg-primary text-primary-foreground rounded-lg disabled:opacity-60">
+              {isSaving ? 'جاري الحفظ...' : product ? 'حفظ التعديلات' : 'إضافة المنتج'}
+            </button>
+            <button type="button" onClick={onClose} disabled={isSaving} className="px-6 py-3 border border-border rounded-lg disabled:opacity-60">إلغاء</button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function MediaPreviewGrid({
+  color,
+  onRemoveExistingImage,
+  onRemoveExistingVideo,
+  onRemoveNewImage,
+  onRemoveNewVideo,
+}: {
+  color: EditableProductColor;
+  onRemoveExistingImage: (index: number) => void;
+  onRemoveExistingVideo: (index: number) => void;
+  onRemoveNewImage: (index: number) => void;
+  onRemoveNewVideo: (index: number) => void;
+}) {
+  const hasMedia = Boolean(
+    color.images?.length || color.videos?.length || color.imageFiles?.length || color.videoFiles?.length
+  );
+
+  if (!hasMedia) return null;
+
+  return (
+    <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      {(color.images || []).map((src, index) => (
+        <MediaTile key={`image-${src}-${index}`} label="صورة محفوظة" onRemove={() => onRemoveExistingImage(index)}>
+          <img src={src} alt="" className="h-full w-full object-cover" />
+        </MediaTile>
+      ))}
+      {(color.videos || []).map((src, index) => (
+        <MediaTile key={`video-${src}-${index}`} label="فيديو محفوظ" onRemove={() => onRemoveExistingVideo(index)}>
+          <video src={src} className="h-full w-full object-cover" muted controls />
+        </MediaTile>
+      ))}
+      {(color.imageFiles || []).map((file, index) => (
+        <FileMediaTile
+          key={`new-image-${file.name}-${file.lastModified}-${index}`}
+          file={file}
+          label={file.name}
+          type="image"
+          onRemove={() => onRemoveNewImage(index)}
+        />
+      ))}
+      {(color.videoFiles || []).map((file, index) => (
+        <FileMediaTile
+          key={`new-video-${file.name}-${file.lastModified}-${index}`}
+          file={file}
+          label={file.name}
+          type="video"
+          onRemove={() => onRemoveNewVideo(index)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function FileMediaTile({
+  file,
+  label,
+  type,
+  onRemove,
+}: {
+  file: File;
+  label: string;
+  type: 'image' | 'video';
+  onRemove: () => void;
+}) {
+  const previewUrl = useMemo(() => URL.createObjectURL(file), [file]);
+
+  useEffect(() => {
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  return (
+    <MediaTile label={label} onRemove={onRemove}>
+      {type === 'image' ? (
+        <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <video src={previewUrl} className="h-full w-full object-cover" muted controls />
+      )}
+    </MediaTile>
+  );
+}
+
+function MediaTile({
+  children,
+  label,
+  onRemove,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-muted">
+      {children}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute left-2 top-2 rounded-full bg-white/90 p-1 text-destructive shadow hover:bg-white"
+        aria-label="حذف الملف"
+      >
+        <X className="h-4 w-4" />
+      </button>
+      <div className="absolute inset-x-0 bottom-0 truncate bg-black/50 px-2 py-1 text-xs text-white">
+        {label}
       </div>
     </div>
   );
