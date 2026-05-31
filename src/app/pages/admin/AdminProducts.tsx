@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Edit, Plus, Search, Trash2, Upload, X } from 'lucide-react';
+import { Edit, Film, ImagePlus, Plus, Search, Trash2, X } from 'lucide-react';
 import { deleteProduct, fetchCategories, fetchProducts, saveProductWithInventory } from '../../lib/services';
 import type { Category, EditableProductColor, Product, ProductInventory } from '../../lib/types';
 import { toast } from 'sonner';
@@ -312,23 +312,40 @@ function ProductModal({
 
                 <div>
                   <label className="block mb-2 text-sm font-medium">صور اللون وفيديوهاته</label>
-                  <label className="flex items-center justify-center gap-2 p-5 border-2 border-dashed border-border rounded-lg hover:border-primary cursor-pointer">
-                    <Upload className="w-5 h-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">رفع صور أو فيديو لهذا اللون</span>
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        updateColor(colorIndex, {
-                          imageFiles: [...(color.imageFiles || []), ...files.filter((file) => file.type.startsWith('image'))],
-                          videoFiles: [...(color.videoFiles || []), ...files.filter((file) => file.type.startsWith('video'))],
-                        });
-                      }}
-                    />
-                  </label>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <label className="flex items-center justify-center gap-2 p-5 border-2 border-dashed border-border rounded-lg hover:border-primary cursor-pointer">
+                      <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">رفع صور لهذا اللون</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          updateColor(colorIndex, {
+                            imageFiles: [...(color.imageFiles || []), ...files],
+                          });
+                        }}
+                      />
+                    </label>
+                    <label className="flex items-center justify-center gap-2 p-5 border-2 border-dashed border-border rounded-lg hover:border-primary cursor-pointer">
+                      <Film className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">رفع فيديو لهذا اللون</span>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          updateColor(colorIndex, {
+                            videoFiles: [...(color.videoFiles || []), ...files],
+                          });
+                        }}
+                      />
+                    </label>
+                  </div>
                   <p className="mt-2 text-xs text-muted-foreground">
                     الصور الجديدة: {color.imageFiles?.length || 0}، الفيديوهات الجديدة: {color.videoFiles?.length || 0}
                   </p>
