@@ -451,7 +451,7 @@ export async function fetchOrders(ownOnly = false, adminView = false) {
   if (adminView) {
     const { data, error } = await supabase.rpc('admin_orders_with_items');
     if (!error && Array.isArray(data)) return data.map(mapOrder);
-    if (error) console.warn('[Orders] admin_orders_with_items failed, falling back to table query:', error.message);
+    if (error) throw error;
   }
 
   const user = (await supabase.auth.getUser()).data.user;

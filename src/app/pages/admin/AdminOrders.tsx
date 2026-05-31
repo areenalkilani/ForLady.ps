@@ -12,11 +12,14 @@ export function AdminOrders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   const loadOrders = () => fetchOrders(false, true).then(setOrders).catch((error) => {
     console.error('[AdminOrders] Load failed:', error);
+    setLoadError(error.message || 'تعذر تحميل الطلبات');
     toast.error(error.message || 'تعذر تحميل الطلبات');
-  });
+  }).finally(() => setLoading(false));
   useEffect(() => { loadOrders(); }, []);
 
   useEffect(() => {
@@ -44,6 +47,11 @@ export function AdminOrders() {
   return (
     <div className="space-y-6">
       <div><h1 className="text-3xl font-bold">الطلبات</h1><p className="text-muted-foreground">{orders.length} طلب</p></div>
+      {loadError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {loadError}
+        </div>
+      )}
       <div className="bg-white rounded-2xl p-4 grid md:grid-cols-2 gap-4">
         <div className="relative"><Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" /><input placeholder="بحث عن طلب أو عميل..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pr-10 pl-4 py-3 bg-muted rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-primary" /></div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-3 bg-muted rounded-lg border-0 focus:outline-none focus:ring-2 focus:ring-primary"><option value="all">جميع الحالات</option>{orderStatuses.map((status) => <option key={status} value={status}>{getStatusLabel(status)}</option>)}</select>
@@ -53,6 +61,18 @@ export function AdminOrders() {
           <table className="w-full">
             <thead className="bg-muted/50"><tr><th className="text-right px-6 py-4">رقم الطلب</th><th className="text-right px-6 py-4">العميل</th><th className="text-right px-6 py-4">المنطقة</th><th className="text-right px-6 py-4">المبلغ</th><th className="text-right px-6 py-4">الحالة</th><th className="text-right px-6 py-4">التاريخ</th><th className="text-right px-6 py-4">الإجراءات</th></tr></thead>
             <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">جاري تحميل الطلبات...</td>
+                </tr>
+              )}
+              {!loading && filteredOrders.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground">
+                    لا توجد طلبات ظاهرة. إذا كنتِ متأكدة أن هناك طلبات، شغلي ملف SQL رقم 011 في Supabase ثم سجلي خروج ودخول للأدمن.
+                  </td>
+                </tr>
+              )}
               {filteredOrders.map((order) => (
                 <tr key={order.id} className="border-t border-border">
                   <td className="px-6 py-4 font-semibold">{order.id}</td>
